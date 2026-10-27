@@ -2,18 +2,8 @@
 
 import { createAuthClient } from "better-auth/react";
 
-const baseURL =
-  process.env.NEXT_PUBLIC_BETTER_AUTH_URL ||
-  process.env.NEXT_PUBLIC_APP_URL ||
-  "http://localhost:3000";
-
 export const authClient = createAuthClient({
-  baseURL,
+  baseURL: "https://bazar-six-liart.vercel.app",
 });
 
-export const {
-  signIn,
-  signUp,
-  signOut,
-  useSession,
-} = authClient;
+export const { signIn, signUp, signOut, useSession } = authClient;

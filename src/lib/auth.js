@@ -1,111 +1,32 @@
-
 import { betterAuth } from "better-auth";
+import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { MongoClient } from "mongodb";
-import { mongodbAdapter } from "@better-auth/mongo-adapter";
-
-const mongoUrl = process.env.MONGODB_URL;
-
-if (!mongoUrl) {
-  throw new Error("MONGODB_URL is missing from .env.local");
-}
-
-if (!process.env.BETTER_AUTH_SECRET) {
-  throw new Error(
-    "BETTER_AUTH_SECRET is missing from .env.local"
-  );
-}
 
 const globalForMongo = globalThis;
 
-const client =
-  globalForMongo.mongoClient ?? new MongoClient(mongoUrl);
+const client = globalForMongo.mongo ?? new MongoClient(process.env.MONGODB_URL);
 
-if (!globalForMongo.mongoClient) {
-  globalForMongo.mongoClient = client;
+if (process.env.NODE_ENV !== "production") {
+  globalForMongo.mongo = client;
 }
-
-const connectPromise =
-  globalForMongo.mongoConnectPromise ?? client.connect();
-
-if (!globalForMongo.mongoConnectPromise) {
-  globalForMongo.mongoConnectPromise = connectPromise;
-}
-
-const db = client.db(
-  process.env.MONGODB_DATABASE || "bazar-dor"
-);
-
-const baseURL =
-  process.env.BETTER_AUTH_URL ||
-  process.env.NEXT_PUBLIC_BETTER_AUTH_URL ||
-  process.env.NEXT_PUBLIC_APP_URL ||
-  "http://localhost:3000";
-
-const githubClientId =
-  process.env.BETTER_AUTH_GITHUB_CLIENT_ID;
-
-const githubClientSecret =
-  process.env.BETTER_AUTH_GITHUB_SECRET;
-
-const googleClientId =
-  process.env.BETTER_AUTH_GOOGLE_CLIENT_ID;
-
-const googleClientSecret =
-  process.env.BETTER_AUTH_GOOGLE_SECRET;
 
 export const auth = betterAuth({
-  appName: "Bazar Dor",
+  database: mongodbAdapter(client.db("bazar-dor")),
 
-  secret: process.env.BETTER_AUTH_SECRET,
-
-  baseURL,
-
-  trustedOrigins: [
-    baseURL,
-    process.env.NEXT_PUBLIC_APP_URL,
-  ].filter(Boolean),
-
-  database: mongodbAdapter(db, {
-    client,
-  }),
-
-  
-emailAndPassword: {
-  enabled: true,
-  autoSignIn: true,
-},
-
-
-  socialProviders: {
-    ...(githubClientId && githubClientSecret
-      ? {
-        github: {
-          clientId: githubClientId,
-          clientSecret: githubClientSecret,
-        },
-      }
-      : {}),
-
-    ...(googleClientId && googleClientSecret
-      ? {
-        google: {
-          clientId: googleClientId,
-          clientSecret: googleClientSecret,
-        },
-      }
-      : {}),
+  emailAndPassword: {
+    enabled: true,
+    autoSignIn: false,
   },
 
+  socialProviders: {
+    google: {
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    },
 
-  account: {
-    accountLinking: {
-      enabled: true,
-      trustedProviders: ["google", "github"],
-      allowDifferentEmails: false,
-      requireLocalEmailVerified: false,
-      disableImplicitLinking: false,
+    github: {
+      clientId: process.env.GITHUB_CLIENT_ID,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET,
     },
   },
 });
-
-export { client, connectPromise };
